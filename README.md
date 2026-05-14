@@ -23,8 +23,7 @@ npm install
 ```bash
 cp .env.example .env
 ```
-Open `.env` and replace `your_api_key_here` with your Anthropic API key.
-Get one free at [console.anthropic.com](https://console.anthropic.com)
+Open `.env` and replace `your_api_key_here` 
 
 ### 3. Run the app
 ```bash
@@ -45,7 +44,7 @@ src/
 
 ## Built With
 - React + Vite
-- Anthropic Claude API (claude-sonnet-4)
+- API
 
 ---
 Built as a learning project. Day 1 of 5.
