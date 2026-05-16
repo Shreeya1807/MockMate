@@ -1,28 +1,30 @@
-// MockMate — AI powered by Google Gemini (free tier)
-// Get your free key at: https://aistudio.google.com/apikey
-
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'YOUR_GEMINI_KEY_HERE'
-const MODEL   = 'gemini-2.0-flash'
-const BASE    = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`
+const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || 'YOUR_OPENROUTER_KEY_HERE'
+const MODEL   = 'openrouter/free'
+const BASE    = 'https://openrouter.ai/api/v1/chat/completions'
 
 async function callGemini(systemPrompt, userMessage) {
   const response = await fetch(BASE, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${API_KEY}`,
+    },
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
+      model: MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userMessage },
+      ],
     }),
   })
 
   if (!response.ok) {
     const err = await response.json()
-    throw new Error(err.error?.message || 'Gemini API request failed')
+    throw new Error(err.error?.message || 'OpenRouter API request failed')
   }
 
   const data = await response.json()
-  return data.candidates[0].content.parts[0].text
+  return data.choices[0].message.content
 }
 
 // ── 1. Generate interviewer introduction based on resume ──────────────────────
