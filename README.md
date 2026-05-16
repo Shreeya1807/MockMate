@@ -44,7 +44,5 @@ src/
 
 ## Built With
 - React + Vite
-- API
+- Open Router API
 
----
-Built as a learning project. Day 1 of 5.
