@@ -16,7 +16,7 @@ export function createApp(store,{mode=process.env.AI_MODE||'demo',origin=process
     defaultSrc:["'self'"],scriptSrc:["'self'","'wasm-unsafe-eval'",'https://cdn.jsdelivr.net'],
     workerSrc:["'self'",'blob:'],connectSrc:["'self'",'https://cdn.jsdelivr.net','https://tessdata.projectnaptha.com'],
     imgSrc:["'self'",'data:','blob:'],mediaSrc:["'self'",'blob:'],
-    styleSrc:["'self'","'unsafe-inline'"],fontSrc:["'self'"],upgradeInsecureRequests:null,
+    styleSrc:["'self'","'unsafe-inline'",'https://fonts.googleapis.com'],fontSrc:["'self'",'https://fonts.gstatic.com'],upgradeInsecureRequests:null,
   }}}))
   app.use((req,res,next)=>{
     const id=randomUUID(),start=Date.now()
