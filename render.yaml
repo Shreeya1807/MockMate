@@ -1,0 +1,26 @@
+# Optional single-instance managed deployment. A persistent disk needs a paid plan.
+services:
+  - type: web
+    name: mockmate
+    runtime: docker
+    plan: 0.5c-512mb
+    healthCheckPath: /health/ready
+    maxShutdownDelaySeconds: 40
+    autoDeployTrigger: off
+    disk:
+      name: mockmate-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: AI_MODE
+        value: demo
+      - key: APP_ORIGIN
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        sync: false
+      - key: WORKER_MODE
+        value: embedded
+      - key: TRUST_PROXY
+        value: '1'

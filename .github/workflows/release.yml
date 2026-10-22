@@ -1,0 +1,66 @@
+name: Release and deploy
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.name.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Image name
+        id: name
+        shell: bash
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:sha-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - name: Authenticate to GHCR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Build and publish immutable revision tag
+        env:
+          IMAGE: ${{ steps.name.outputs.image }}
+        run: |
+          docker build --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "Published $IMAGE" >> "$GITHUB_STEP_SUMMARY"
+  deploy:
+    needs: publish
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - name: Deploy verified revision through Render hook
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          test -n "$DEPLOY_HOOK"
+          curl --fail --silent --show-error --request POST "${DEPLOY_HOOK}&ref=${GITHUB_SHA}" > /dev/null
+      - name: Verify deployed revision and readiness
+        env:
+          HEALTH_URL: ${{ secrets.PRODUCTION_HEALTH_URL }}
+        run: |
+          test -n "$HEALTH_URL"
+          for attempt in $(seq 1 60); do
+            if body=$(curl --fail --silent "$HEALTH_URL") && printf '%s' "$body" | jq -e --arg sha "$GITHUB_SHA" '.status == "ready" and .revision == $sha' > /dev/null; then
+              echo "Production is healthy at $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo 'Deployment did not become ready at the expected revision. See the operations runbook.' >&2
+          exit 1

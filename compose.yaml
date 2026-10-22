@@ -1,0 +1,51 @@
+name: mockmate
+x-common: &common
+  build: .
+  image: mockmate:local
+  init: true
+  restart: unless-stopped
+  env_file:
+    - path: .env
+      required: false
+  volumes:
+    - mockmate-data:/app/data
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  stop_grace_period: 40s
+  mem_limit: 512m
+  cpus: 1.0
+services:
+  api:
+    <<: *common
+    ports: ['127.0.0.1:3001:3001']
+    environment:
+      NODE_ENV: production
+      DATABASE_PATH: /app/data/mockmate.sqlite
+      WORKER_MODE: external
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3001}
+      PORT: 3001
+    depends_on:
+      worker:
+        condition: service_started
+  worker:
+    <<: *common
+    command: ['node', 'server/worker.js']
+    environment:
+      DATABASE_PATH: /app/data/mockmate.sqlite
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '--input-type=module',
+          '-e',
+          "import {openStore} from './server/store.js'; const s=openStore(); const ok=s.ready(); s.db.close(); process.exit(ok?0:1)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+volumes:
+  mockmate-data:
