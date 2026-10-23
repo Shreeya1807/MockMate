@@ -5,7 +5,6 @@ services:
     runtime: docker
     plan: free
     healthCheckPath: /health/ready
-    maxShutdownDelaySeconds: 40
     autoDeployTrigger: off
     envVars:
       - key: EVALUATION_MODE
