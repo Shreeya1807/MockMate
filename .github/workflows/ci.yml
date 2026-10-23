@@ -71,3 +71,22 @@ jobs:
       - name: Stop isolated CI containers
         if: always()
         run: docker compose down -v
+  deploy:
+    needs: [quality, postgres, container]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: production-deployment
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Deploy tested revision and verify public readiness
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+        run: node scripts/deploy-render.js

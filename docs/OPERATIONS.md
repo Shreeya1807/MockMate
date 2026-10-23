@@ -126,6 +126,6 @@ For PostgreSQL backups use the provider's restore tools or `pg_dump`/`pg_restore
 
 See [Render free service limits](https://render.com/docs/free) and [Neon plan limits](https://neon.com/pricing) before deployment.
 
-## Hosted demo
+## Hosted application
 
-The demo is available at https://mockmate-nu2x.onrender.com with persistent Neon PostgreSQL storage. Render deploys main after CI checks pass. Keep the optional release-hook deployment disabled unless switching delivery strategies, to avoid duplicate deploys. The current mode is demo; live provider verification and TURN configuration remain separate operator steps.
+The application is available at https://mockmate-nu2x.onrender.com with persistent Neon PostgreSQL storage. GitHub Actions deploys main through the Render API after the quality, PostgreSQL and container jobs pass, then verifies the public revision. Configure repository secrets `RENDER_API_KEY`, `RENDER_SERVICE_ID` and `PRODUCTION_URL`. Render-native auto-deploy is disabled because a public repository URL does not receive Git-provider events. Keep the optional release-hook deployment disabled unless switching delivery strategies, to avoid duplicate deploys. The hosted evaluator uses `nvidia/nemotron-3.5-super-vl:free`; provider availability and quotas apply. Local development defaults to demo. TURN configuration remains a separate operator step.

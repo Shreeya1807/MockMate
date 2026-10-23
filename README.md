@@ -13,7 +13,7 @@ A full-stack interview and assessment studio with résumé parsing, OCR, durable
 
 </div>
 
-[**Open the hosted demo**](https://mockmate-nu2x.onrender.com) · Free hosting may need about a minute to wake after inactivity. Demo feedback is illustrative.
+[**Open MockMate**](https://mockmate-nu2x.onrender.com) · Free hosting may need about a minute to wake after inactivity. The hosted app uses a free live evaluator; provider quotas apply. Local demo mode remains available.
 
 ![MockMate interview studio](docs/studio.png)
 
@@ -117,7 +117,7 @@ GitHub Actions additionally tests the PostgreSQL adapter against PostgreSQL 17 a
 
 ## CI/CD
 
-1. **Push or PR:** quality, PostgreSQL and container smoke checks run. The hosted demo deploys main-branch updates after checks pass.
+1. **Push or PR:** quality, PostgreSQL and container smoke checks run. A dependent GitHub Actions job deploys the tested main revision through the Render API and verifies public readiness.
 2. **Version tag (`v*`) or manual release:** all checks rerun, then a container is published to GHCR with a commit-specific `sha-…` tag.
 3. **Optional production delivery:** configure the `production` GitHub environment, `RENDER_DEPLOY_HOOK` and `PRODUCTION_HEALTH_URL` secrets, and `DEPLOY_ENABLED=true`. The workflow asks Render to deploy the tested Git SHA, then verifies both readiness and the deployed revision.
 
