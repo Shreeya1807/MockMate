@@ -13,6 +13,8 @@ A full-stack interview and assessment studio with résumé parsing, OCR, durable
 
 </div>
 
+[**Open the hosted demo**](https://mockmate-nu2x.onrender.com) · Free hosting may need about a minute to wake after inactivity. Demo feedback is illustrative.
+
 ![MockMate interview studio](docs/studio.png)
 
 MockMate turns a résumé into six interview questions, evaluates answers against a structured rubric, and produces a report you can revisit or export. It runs without an API key in an explicitly labeled demo mode. Live mode uses a server-side OpenRouter integration with schema-validated model output.
@@ -115,7 +117,7 @@ GitHub Actions additionally tests the PostgreSQL adapter against PostgreSQL 17 a
 
 ## CI/CD
 
-1. **Push or PR:** quality and container smoke checks run.
+1. **Push or PR:** quality, PostgreSQL and container smoke checks run. The hosted demo deploys main-branch updates after checks pass.
 2. **Version tag (`v*`) or manual release:** all checks rerun, then a container is published to GHCR with a commit-specific `sha-…` tag.
 3. **Optional production delivery:** configure the `production` GitHub environment, `RENDER_DEPLOY_HOOK` and `PRODUCTION_HEALTH_URL` secrets, and `DEPLOY_ENABLED=true`. The workflow asks Render to deploy the tested Git SHA, then verifies both readiness and the deployed revision.
 

@@ -125,3 +125,7 @@ PostgreSQL storage survives web-service restarts. Video rooms remain in memory a
 For PostgreSQL backups use the provider's restore tools or `pg_dump`/`pg_restore` with credentials supplied securely through the environment. `npm run backup` is deliberately limited to SQLite and refuses to run when hosted storage is configured. Test restoration in a separate database before relying on backups.
 
 See [Render free service limits](https://render.com/docs/free) and [Neon plan limits](https://neon.com/pricing) before deployment.
+
+## Hosted demo
+
+The demo is available at https://mockmate-nu2x.onrender.com with persistent Neon PostgreSQL storage. Render deploys main after CI checks pass. Keep the optional release-hook deployment disabled unless switching delivery strategies, to avoid duplicate deploys. The current mode is demo; live provider verification and TURN configuration remain separate operator steps.
