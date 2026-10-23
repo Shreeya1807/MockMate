@@ -28,6 +28,8 @@ Replace the domain with your own, configure DNS, set `APP_ORIGIN=https://your-do
 
 ## Environment settings
 
+Set `DATABASE_URL` for PostgreSQL and `REQUIRE_DATABASE_URL=1` on hosts without persistent disks. Otherwise `DATABASE_PATH` selects local SQLite. `APP_ORIGIN` falls back to Render's external URL, then localhost.
+
 | Variable                                       | Purpose                                                                                  |
 | ---------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `EVALUATION_MODE`                              | `demo` (default) or `live`                                                               |
@@ -46,15 +48,15 @@ Never use a `VITE_` prefix for provider credentials. Restrict the provider key's
 
 ## GitHub CI and release
 
-Quality gates install the lockfile, lint, check formatting, run API tests, audit dependencies, build, and run Chromium E2E tests. A second job builds Compose and checks readiness. CodeQL and Dependabot are configured separately. Require the quality and container jobs in branch protection.
+Quality gates install the lockfile, lint, check formatting, run API tests, audit dependencies, build, and run Chromium E2E tests. A second job builds Compose and checks readiness. CodeQL and Dependabot are configured separately. Require the quality, postgres and container jobs in branch protection.
 
 Release tags matching `v*` or a manual release workflow rerun all quality gates before publishing `ghcr.io/shreeya1807/mockmate:sha-<commit>`. The token needs repository package permissions, which the publish job requests. Package visibility/access must be configured in GHCR if you want anonymous pulls.
 
 Optional Render setup:
 
-1. Connect the repository to Render and create a Blueprint from `render.yaml`. Review the paid compute and disk configuration before creating resources.
-2. Set the service's exact HTTPS `APP_ORIGIN`. Keep `EVALUATION_MODE=demo` initially; enable live mode only with a compatible model/key.
-3. Confirm `/health/ready` is ready. A persistent disk must be writable by the non-root container user.
+1. Connect the repository to Render and create a Blueprint from `render.yaml`. Choose the free plan and supply a Neon PostgreSQL connection string; see the free deployment section below.
+2. Render supplies the HTTPS origin automatically; set `APP_ORIGIN` when using a custom domain. Keep `EVALUATION_MODE=demo` initially; enable live mode only with a compatible model/key.
+3. Confirm `/health/ready` is ready. Confirm PostgreSQL is connected and persists sessions across a service restart.
 4. Create a GitHub environment named `production`. Store `RENDER_DEPLOY_HOOK` (the complete secret URL, including its key query parameter) and `PRODUCTION_HEALTH_URL` (the public HTTPS `/health/ready` URL).
 5. Set repository variable `DEPLOY_ENABLED=true`. The release workflow appends `ref=<tested SHA>` to the Render hook and waits for readiness **at that SHA**. Set an environment approval rule if your team requires one.
 
@@ -105,3 +107,21 @@ To restore: stop both API and worker; preserve the current database and its WAL/
 Before releasing, create a verified backup. The current schema is version 1 and initialized idempotently; future schema changes need explicit, tested migrations. On a bad release, use Render's prior successful deployment or redeploy a known-good commit. For manual containers, run the previous image revision. Preserve the data volume. Verify readiness, revision, and a sample flow after rollback. Restore a backup only when schema compatibility requires it, acknowledging loss of post-backup data.
 
 Persistent-disk deployments are single-instance; maintenance/restarts can interrupt video rooms. Queue leases recover unfinished work within 60 seconds. In-flight provider requests may be billed more than once after a crash. The workflow detects a failed deployment and stops; rollback remains an explicit operator action.
+
+## Free hosted deployment
+
+The supplied blueprint runs one free Render web service with an external Neon PostgreSQL database. It creates no paid disk or background worker. Local development still uses SQLite when `DATABASE_URL` is blank.
+
+1. Create a free Neon project and copy its pooled PostgreSQL connection string, including TLS parameters, from the Connect dialog. Keep the password private.
+2. Create a Render Blueprint from this repository. Confirm the service plan is **Free**. Enter the connection string as the secret `DATABASE_URL` value. `REQUIRE_DATABASE_URL=1` prevents silent fallback to temporary local storage.
+3. Keep `EVALUATION_MODE=demo` until provider credentials are configured and tested. Render's `RENDER_EXTERNAL_URL` supplies the browser origin automatically. For a custom domain, set `APP_ORIGIN` to its exact HTTPS origin.
+4. Check `/health/ready`, then run `npm run verify:deployment -- https://your-service.onrender.com`. This creates a synthetic interview, checks questions and feedback, confirms history, and deletes the test session. Live mode requires explicit `--allow-live` and can consume provider quota, including bounded retries.
+5. Configure the optional GitHub deployment secrets described above to release verified revisions.
+
+Free hosting has limits: Render sleeps after inactivity and may take about a minute to wake. An interrupted evaluation recovers through its database lease on wake. Neon usage quotas still apply, and worker polling keeps its database active while the web process runs. Do not add an uptime pinger; monitor quota usage instead. Free hosting does not include unlimited model evaluation or a TURN relay. Keep all accounts on free plans and do not enable paid upgrades without a budget.
+
+PostgreSQL storage survives web-service restarts. Video rooms remain in memory and disconnect on restarts. Only one API instance is supported because rate limits and signaling are process-local. The database adapter uses transactions, admission locks, row locking, shared provider pacing and attempt fencing. Existing local SQLite sessions are not automatically migrated.
+
+For PostgreSQL backups use the provider's restore tools or `pg_dump`/`pg_restore` with credentials supplied securely through the environment. `npm run backup` is deliberately limited to SQLite and refuses to run when hosted storage is configured. Test restoration in a separate database before relying on backups.
+
+See [Render free service limits](https://render.com/docs/free) and [Neon plan limits](https://neon.com/pricing) before deployment.

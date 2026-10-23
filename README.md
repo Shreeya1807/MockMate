@@ -9,7 +9,7 @@ A full-stack interview and assessment studio with résumé parsing, OCR, durable
 [![Quality gates](https://github.com/Shreeya1807/MockMate/actions/workflows/ci.yml/badge.svg)](https://github.com/Shreeya1807/MockMate/actions/workflows/ci.yml)
 [![Code security](https://github.com/Shreeya1807/MockMate/actions/workflows/security.yml/badge.svg)](https://github.com/Shreeya1807/MockMate/actions/workflows/security.yml)
 
-**React + Vite · Node.js + Express · SQLite WAL · OpenRouter · WebRTC · Docker · GitHub Actions**
+**React + Vite · Node.js + Express · SQLite / PostgreSQL · OpenRouter · WebRTC · Docker · GitHub Actions**
 
 </div>
 
@@ -43,7 +43,7 @@ Open **http://localhost:5173**. Choose **Try a sample**, review the consent chec
 
 | Concern             | Implementation                                                                                                                                             |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Durable async work  | SQLite-backed jobs, separate worker entry point, atomic claims, restart recovery                                                                           |
+| Durable async work  | SQLite/PostgreSQL-backed jobs, separate worker entry point, atomic claims, restart recovery                                                                |
 | Bounded retries     | Three attempts maximum, exponential backoff with jitter, 60-second leases, 25-second provider timeout                                                      |
 | Provider limits     | Shared call pacing, `Retry-After` cooldown, 100-job backlog cap, request and submission rate limits                                                        |
 | Duplicate requests  | One evaluation per session/question; repeated identical answers return the same job; conflicting submissions return 409                                    |
@@ -57,7 +57,7 @@ Open **http://localhost:5173**. Choose **Try a sample**, review the consent chec
 flowchart LR
   U[React interview studio] --> P[PDF.js + browser OCR]
   U -->|same-origin API| A[Express API]
-  A -->|session + queued job transaction| D[(SQLite WAL)]
+  A -->|session + queued job transaction| D[(SQLite / PostgreSQL)]
   W[Evaluation workers] -->|atomic lease claim| D
   W -->|JSON schema + timeout| L[OpenRouter model]
   L -->|Zod validation| W
@@ -111,7 +111,7 @@ npm audit --audit-level=high
 
 The tests cover the full interview/report/history/delete journey, mobile layout, real PDF parsing, real image/scanned-PDF OCR, and a two-peer WebRTC connection with simulated camera devices. API tests cover ownership isolation, idempotency, schema violations, retry exhaustion, provider errors, leases, pacing, retention, readiness, and rate limits. OCR tests download public language/engine assets and therefore require network access.
 
-GitHub Actions additionally builds and starts the API/worker containers. CodeQL runs separately, and Dependabot checks dependencies and action versions. Browser traces and screenshots are uploaded when CI runs. A green local test run does not imply that remote Actions or a cloud deployment have already run.
+GitHub Actions additionally tests the PostgreSQL adapter against PostgreSQL 17 and builds and starts the API/worker containers. Local PostgreSQL contract tests use embedded PGlite; CI tests real concurrent server connections. CodeQL runs separately, and Dependabot checks dependencies and action versions. Browser traces and screenshots are uploaded when CI runs. A green local test run does not imply that remote Actions or a cloud deployment have already run.
 
 ## CI/CD
 
@@ -119,7 +119,7 @@ GitHub Actions additionally builds and starts the API/worker containers. CodeQL 
 2. **Version tag (`v*`) or manual release:** all checks rerun, then a container is published to GHCR with a commit-specific `sha-…` tag.
 3. **Optional production delivery:** configure the `production` GitHub environment, `RENDER_DEPLOY_HOOK` and `PRODUCTION_HEALTH_URL` secrets, and `DEPLOY_ENABLED=true`. The workflow asks Render to deploy the tested Git SHA, then verifies both readiness and the deployed revision.
 
-`render.yaml` provides an optional persistent-disk deployment blueprint. It uses a paid compute/disk configuration; no hosting account or paid resource is created by this repository. GHCR is a distributable image; the supplied Render workflow rebuilds the same verified commit. [Deployment and rollback instructions →](docs/OPERATIONS.md)
+`render.yaml` provides a free Render web-service blueprint backed by an external Neon PostgreSQL database. Sessions persist across web-service restarts; free-tier sleep and usage quotas apply. See the runbook for account setup and verification. GHCR is a distributable image; the supplied Render workflow rebuilds the same verified commit. [Deployment and rollback instructions →](docs/OPERATIONS.md)
 
 ## Project map
 
@@ -128,7 +128,8 @@ src/                    React studio, reports, media controls, PDF/OCR extractio
 server/app.js           HTTP API, validation, ownership, rate limits, probes
 server/contracts.js     Shared server-side data contracts and output constraints
 server/provider.js      Live evaluation gateway and explicit demo fixtures
-server/store.js         Persistent sessions, queue, transactions and leases
+server/store.js         Local SQLite sessions, queue, transactions and leases
+server/postgres-store.js Hosted PostgreSQL persistence and queue locking
 server/worker.js        Bounded evaluation workers and graceful shutdown
 server/signaling.js     Two-participant, expiring WebRTC signaling rooms
 tests/                  API/queue regressions and browser workflows
@@ -139,6 +140,6 @@ docs/                   Architecture, API and operations
 
 ## Scope and tradeoffs
 
-This is a deployable, single-host portfolio application. SQLite/WAL keeps setup and operations simple; it is **not a distributed queue**. Run one API process per deployment, with workers sharing a local disk. Moving to multiple API replicas requires shared rate limiting, durable distributed signaling, and a server database/queue migration. No enterprise accounts, billing, ATS integration, proctoring, recording, or hiring automation are claimed.
+This is a deployable, single-host portfolio application. SQLite/WAL keeps setup and operations simple; it is **not a distributed queue**. Run one API process per deployment. Local workers share a disk; hosted workers share PostgreSQL. Moving to multiple API replicas requires shared rate limiting, durable distributed signaling, and coordinated worker capacity. No enterprise accounts, billing, ATS integration, proctoring, recording, or hiring automation are claimed.
 
 Speech recognition varies by browser and may use its vendor's cloud service. Video across restrictive networks requires TURN; demo/local peer tests do not prove connectivity across every NAT. Resumes and answers are sensitive: read the [security/privacy notes](SECURITY.md). Clear browser cookies and you lose access to that browser's retained sessions.
