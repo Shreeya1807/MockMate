@@ -47,7 +47,7 @@ export default function Results({ session, onContinue, onRestart }) {
           <p className="hint">
             {session.mode === 'demo'
               ? 'Demo scores are fixed examples, not a measure of interview performance.'
-              : 'AI feedback is coaching guidance. Review its accuracy and use your own judgment.'}
+              : 'Automated feedback is coaching guidance. Review its accuracy and use your own judgment.'}
           </p>
         </div>
         <div className="overall">

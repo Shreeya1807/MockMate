@@ -4,7 +4,7 @@
 
 ### Your experience. A better story. Your next opportunity.
 
-A full-stack AI interview and assessment studio with résumé parsing, OCR, durable evaluation workers, live peer practice, and a repeatable delivery pipeline.
+A full-stack interview and assessment studio with résumé parsing, OCR, durable evaluation workers, live peer practice, and a repeatable delivery pipeline.
 
 [![Quality gates](https://github.com/Shreeya1807/MockMate/actions/workflows/ci.yml/badge.svg)](https://github.com/Shreeya1807/MockMate/actions/workflows/ci.yml)
 [![Code security](https://github.com/Shreeya1807/MockMate/actions/workflows/security.yml/badge.svg)](https://github.com/Shreeya1807/MockMate/actions/workflows/security.yml)
@@ -48,7 +48,7 @@ Open **http://localhost:5173**. Choose **Try a sample**, review the consent chec
 | Provider limits     | Shared call pacing, `Retry-After` cooldown, 100-job backlog cap, request and submission rate limits                                                        |
 | Duplicate requests  | One evaluation per session/question; repeated identical answers return the same job; conflicting submissions return 409                                    |
 | Output integrity    | Strict JSON-schema request plus Zod validation, sequential question IDs, category distribution checks, bounded score/text fields                           |
-| Server-side secrets | No `VITE_*` model key; only the server calls the AI provider                                                                                               |
+| Server-side secrets | No `VITE_*` model key; only the server calls the evaluation provider                                                                                       |
 | Session isolation   | Random HttpOnly, SameSite browser capability; only its SHA-256 hash is stored; ownership checked on every session/job read                                 |
 | Operations          | Liveness/readiness probes, worker heartbeat, JSON request logs, protected Prometheus metrics, online backup command                                        |
 | Delivery            | Lint + formatting + API regressions + real browser tests + dependency audit + container smoke tests; GHCR releases and optional verified Render deployment |
@@ -69,18 +69,18 @@ flowchart LR
 
 See [architecture and design decisions](docs/ARCHITECTURE.md), [API reference](docs/API.md), and [operations runbook](docs/OPERATIONS.md).
 
-## Enable live AI
+## Enable live evaluation
 
 Copy `.env.example` to `.env` (`Copy-Item .env.example .env` in PowerShell), then set:
 
 ```dotenv
-AI_MODE=live
+EVALUATION_MODE=live
 OPENROUTER_API_KEY=your-server-side-key
 OPENROUTER_MODEL=your-structured-output-capable-model
 APP_ORIGIN=http://localhost:5173
 ```
 
-Restart the server. Select a model/provider that supports [OpenRouter structured outputs](https://openrouter.ai/docs/guides/features/structured-outputs). Unsupported or invalid responses fail explicitly; the app never silently replaces failed live AI with fake scores. Existing demo jobs are not sent to the provider after switching modes.
+Restart the server. Select a model/provider that supports [OpenRouter structured outputs](https://openrouter.ai/docs/guides/features/structured-outputs). Unsupported or invalid responses fail explicitly; the app never silently replaces failed live evaluations with fake scores. Existing demo jobs are not sent to the provider after switching modes.
 
 **Demo feedback is a fixed illustrative example, not a model evaluation.** Live scoring is coaching guidance, not a hiring decision or a validated psychometric assessment. No live provider claim is made without testing your configured credentials/model.
 
@@ -127,14 +127,14 @@ GitHub Actions additionally builds and starts the API/worker containers. CodeQL 
 src/                    React studio, reports, media controls, PDF/OCR extraction
 server/app.js           HTTP API, validation, ownership, rate limits, probes
 server/contracts.js     Shared server-side data contracts and output constraints
-server/provider.js      Live AI gateway and explicit demo fixtures
+server/provider.js      Live evaluation gateway and explicit demo fixtures
 server/store.js         Persistent sessions, queue, transactions and leases
 server/worker.js        Bounded evaluation workers and graceful shutdown
 server/signaling.js     Two-participant, expiring WebRTC signaling rooms
 tests/                  API/queue regressions and browser workflows
 scripts/backup.js        Consistent online SQLite backup
 .github/workflows/      Quality, security, image publishing and optional deployment
-docs/                   Architecture, API, operations and résumé evidence
+docs/                   Architecture, API and operations
 ```
 
 ## Scope and tradeoffs
@@ -142,7 +142,3 @@ docs/                   Architecture, API, operations and résumé evidence
 This is a deployable, single-host portfolio application. SQLite/WAL keeps setup and operations simple; it is **not a distributed queue**. Run one API process per deployment, with workers sharing a local disk. Moving to multiple API replicas requires shared rate limiting, durable distributed signaling, and a server database/queue migration. No enterprise accounts, billing, ATS integration, proctoring, recording, or hiring automation are claimed.
 
 Speech recognition varies by browser and may use its vendor's cloud service. Video across restrictive networks requires TURN; demo/local peer tests do not prove connectivity across every NAT. Resumes and answers are sensitive: read the [security/privacy notes](SECURITY.md). Clear browser cookies and you lose access to that browser's retained sessions.
-
-## Résumé evidence
-
-See [RESUME-EVIDENCE.md](docs/RESUME-EVIDENCE.md) for the original claim audit, source-code evidence, and accurate résumé bullets. The earlier prototype had PDF extraction, browser speech, a webcam preview, and direct browser AI requests. OCR, durable jobs, bounded retries, strict evaluation schemas, real peer video, and CI/CD were added in this upgrade. Describe the dates and contributions accurately; this work does not retroactively establish what existed in May–June 2026.

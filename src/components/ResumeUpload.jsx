@@ -103,8 +103,8 @@ export default function ResumeUpload({ onStart, busy, mode }) {
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
           <span>
             I agree to send this text to the MockMate server
-            {mode === 'live' ? ' and its AI provider' : ''}. Sessions expire after 7 days; I can
-            delete them earlier.
+            {mode === 'live' ? ' and its evaluation provider' : ''}. Sessions expire after 7 days; I
+            can delete them earlier.
           </span>
         </label>
         <button

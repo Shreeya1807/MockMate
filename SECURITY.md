@@ -9,7 +9,7 @@ Report a suspected vulnerability privately to the repository owner through GitHu
 - Mutations require a custom header and enforce the configured Origin. No cross-origin API access is enabled.
 - Helmet headers/CSP, input schemas, parameterized SQL, payload limits, rate limits, and bounded jobs constrain requests.
 - Model outputs are validated before persistence. Models receive no execution tools. Job error messages expose safe codes instead of raw provider payloads.
-- Media access is opt-in; tracks are stopped on leave/unmount. Video is neither recorded nor sent to the AI model.
+- Media access is opt-in; tracks are stopped on leave/unmount. Video is neither recorded nor sent to the evaluation service.
 
 ## Where data goes
 
@@ -21,6 +21,6 @@ Browser speech recognition may process audio through the browser vendor. Peer me
 
 ## Boundaries
 
-Browser capability ownership is not enterprise authentication or account recovery. Clearing cookies loses access to existing sessions. No authorization roles, SSO, abuse-proof public signup, or compliance certification are claimed. Public live-AI hosting needs a suitable access/cost policy in addition to these basic limits. Keep provider budgets bounded. An API key previously embedded in a `VITE_*` build should be rotated.
+Browser capability ownership is not enterprise authentication or account recovery. Clearing cookies loses access to existing sessions. No authorization roles, SSO, abuse-proof public signup, or compliance certification are claimed. Public hosting with live evaluation needs a suitable access/cost policy in addition to these basic limits. Keep provider budgets bounded. An API key previously embedded in a `VITE_*` build should be rotated.
 
-The API and room rate limits are process-local. Run one API instance with a trusted proxy configuration. AI output can be wrong or influenced by input even when structurally valid; it is coaching, not an employment decision. Deleting a session cannot retract information already transmitted to a provider.
+The API and room rate limits are process-local. Run one API instance with a trusted proxy configuration. Automated output can be wrong or influenced by input even when structurally valid; it is coaching, not an employment decision. Deleting a session cannot retract information already transmitted to a provider.

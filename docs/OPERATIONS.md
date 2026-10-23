@@ -30,7 +30,7 @@ Replace the domain with your own, configure DNS, set `APP_ORIGIN=https://your-do
 
 | Variable                                       | Purpose                                                                                  |
 | ---------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `AI_MODE`                                      | `demo` (default) or `live`                                                               |
+| `EVALUATION_MODE`                              | `demo` (default) or `live`                                                               |
 | `OPENROUTER_API_KEY`                           | Server-only provider credential                                                          |
 | `OPENROUTER_MODEL`                             | Explicit model ID supporting strict JSON schema                                          |
 | `APP_ORIGIN`                                   | Exact browser origin, no trailing slash                                                  |
@@ -53,7 +53,7 @@ Release tags matching `v*` or a manual release workflow rerun all quality gates 
 Optional Render setup:
 
 1. Connect the repository to Render and create a Blueprint from `render.yaml`. Review the paid compute and disk configuration before creating resources.
-2. Set the service's exact HTTPS `APP_ORIGIN`. Keep `AI_MODE=demo` initially; enable live mode only with a compatible model/key.
+2. Set the service's exact HTTPS `APP_ORIGIN`. Keep `EVALUATION_MODE=demo` initially; enable live mode only with a compatible model/key.
 3. Confirm `/health/ready` is ready. A persistent disk must be writable by the non-root container user.
 4. Create a GitHub environment named `production`. Store `RENDER_DEPLOY_HOOK` (the complete secret URL, including its key query parameter) and `PRODUCTION_HEALTH_URL` (the public HTTPS `/health/ready` URL).
 5. Set repository variable `DEPLOY_ENABLED=true`. The release workflow appends `ref=<tested SHA>` to the Render hook and waits for readiness **at that SHA**. Set an environment approval rule if your team requires one.
@@ -63,7 +63,7 @@ This integration follows [Render deploy hooks](https://render.com/docs/deploy-ho
 ## Observe and diagnose
 
 - `/health/live`: process availability.
-- `/health/ready`: database access, recent worker heartbeat, deployed revision. It does **not** prove the upstream AI provider is healthy.
+- `/health/ready`: database access, recent worker heartbeat, deployed revision. It does **not** prove the upstream evaluation provider is healthy.
 - `/metrics`: job counts by status and worker readiness, protected by a bearer token. Use your monitoring system's secret configuration for the header.
 - JSON logs include request ID, method, status, and latency, without bodies, resume text, tokens, query strings, or invite URLs.
 
@@ -77,7 +77,7 @@ Investigate growing queued work, failed evaluations, sustained 429s, stale heart
 | `PROVIDER_HTTP_401` / 403                    | Key validity and provider access                                                     |
 | `PROVIDER_HTTP_400` / invalid model output   | Model supports requested schema and parameters                                       |
 | `PROVIDER_HTTP_429`                          | Provider quota; queued retries honor bounded cooldown                                |
-| `AI_MODE_CHANGED`                            | Session was created under another mode; start a new session with appropriate consent |
+| `EVALUATION_MODE_CHANGED`                    | Session was created under another mode; start a new session with appropriate consent |
 | Video works locally but not remotely         | HTTPS, proxy WebSocket support, TURN credentials and network restrictions            |
 | OCR cannot load                              | Browser network/CSP allows public engine and language assets; paste text as fallback |
 

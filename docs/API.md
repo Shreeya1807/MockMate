@@ -66,7 +66,7 @@ States: `queued`, `running`, `completed`, `failed`. Evaluation results include `
 - 429: more than 180 API requests/minute/IP, 12 submissions/minute/IP, or 30 retained sessions/browser.
 - 503: queue already contains 100 pending/running jobs, or readiness failure.
 
-Job error codes distinguish invalid model output, HTTP provider failures, timeouts, and AI mode changes. External provider response bodies are not exposed. Retryable provider errors are 408, 429, 5xx, transport failures, and malformed output. Authentication/model configuration errors fail without repeated calls.
+Job error codes distinguish invalid model output, HTTP provider failures, timeouts, and evaluation mode changes. External provider response bodies are not exposed. Retryable provider errors are 408, 429, 5xx, transport failures, and malformed output. Authentication/model configuration errors fail without repeated calls.
 
 ## Signaling protocol
 

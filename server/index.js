@@ -16,7 +16,7 @@ server.listen(Number(process.env.PORT || 3001), '0.0.0.0', () =>
     JSON.stringify({
       event: 'listening',
       port: Number(process.env.PORT || 3001),
-      mode: process.env.AI_MODE || 'demo',
+      mode: process.env.EVALUATION_MODE || 'demo',
     }),
   ),
 )

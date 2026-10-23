@@ -107,7 +107,11 @@ export default function App() {
           </span>
           <span className="mode">
             <i />
-            {config?.mode === 'live' ? 'AI connected' : config ? 'Demo workspace' : 'Connecting…'}
+            {config?.mode === 'live'
+              ? 'Evaluation service connected'
+              : config
+                ? 'Demo workspace'
+                : 'Connecting…'}
           </span>
         </header>
         <main>
@@ -149,7 +153,7 @@ export default function App() {
               <span>✦</span>
               <p>
                 <strong>You’re in demo mode.</strong> Explore the full workflow with sample
-                feedback. Live AI is enabled through server configuration.
+                feedback. Live evaluation is enabled through server configuration.
               </p>
               <span className="pill">NO API KEY NEEDED</span>
             </div>

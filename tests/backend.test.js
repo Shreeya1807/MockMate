@@ -231,7 +231,7 @@ test('changing demo to live never sends prior demo data to the provider', async 
   await processOne(store, provider, 0)
   assert.equal(called, false)
   assert.equal(store.job(jobId, 'owner').status, 'failed')
-  assert.equal(store.job(jobId, 'owner').error, 'AI_MODE_CHANGED')
+  assert.equal(store.job(jobId, 'owner').error, 'EVALUATION_MODE_CHANGED')
 })
 test('jobs survive a database reopen and independent connections cannot double-claim', (t) => {
   const directory = mkdtempSync(join(tmpdir(), 'mockmate-queue-'))

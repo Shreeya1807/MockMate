@@ -11,8 +11,8 @@ export async function processOne(store, provider, interval = 1000) {
       .prepare('SELECT mode FROM sessions WHERE id=?')
       .get(job.session_id)?.mode
     if (provider.mode && sessionMode !== provider.mode) {
-      const error = new Error('AI_MODE_CHANGED')
-      error.code = 'AI_MODE_CHANGED'
+      const error = new Error('EVALUATION_MODE_CHANGED')
+      error.code = 'EVALUATION_MODE_CHANGED'
       error.retryable = false
       throw error
     }

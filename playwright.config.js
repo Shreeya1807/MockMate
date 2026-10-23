@@ -21,7 +21,7 @@ export default defineConfig({
     url: 'http://localhost:3001/health/ready',
     reuseExistingServer: false,
     env: {
-      AI_MODE: 'demo',
+      EVALUATION_MODE: 'demo',
       APP_ORIGIN: 'http://localhost:3001',
       DATABASE_PATH: 'data/e2e.sqlite',
       PORT: '3001',

@@ -12,7 +12,7 @@ export function demoPlan(input) {
       input.resume.toLowerCase().includes(s.toLowerCase()),
     ) || 'your main technology'
   return {
-    introduction: `Welcome! This is a demo practice session for a ${input.level} ${input.role}. We will explore communication, technical decisions, and your experience. Demo feedback is illustrative, not an AI assessment.`,
+    introduction: `Welcome! This is a demo practice session for a ${input.level} ${input.role}. We will explore communication, technical decisions, and your experience. Demo feedback is illustrative, not an automated assessment.`,
     questions: [
       [
         'communication',
@@ -53,8 +53,11 @@ export function demoAssessment({ answer }) {
     exampleAnswer: `Use your own facts: "Our team faced [specific problem]. I chose [action] because [tradeoff]. I verified the result with [measurement]. Next time I would [lesson]." Your response contained ${answer.trim().split(/\s+/).length} words.`,
   }
 }
-export function createProvider({ mode = process.env.AI_MODE || 'demo', fetchImpl = fetch } = {}) {
-  if (!['demo', 'live'].includes(mode)) throw new Error('AI_MODE must be demo or live')
+export function createProvider({
+  mode = process.env.EVALUATION_MODE || 'demo',
+  fetchImpl = fetch,
+} = {}) {
+  if (!['demo', 'live'].includes(mode)) throw new Error('EVALUATION_MODE must be demo or live')
   if (mode === 'live' && (!process.env.OPENROUTER_API_KEY || !process.env.OPENROUTER_MODEL))
     throw new Error('Live mode requires OPENROUTER_API_KEY and OPENROUTER_MODEL')
   const provider = async (kind, input) => {

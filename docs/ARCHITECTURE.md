@@ -2,11 +2,11 @@
 
 ## Request lifecycle
 
-`POST /api/sessions` validates the resume, role, and level and atomically inserts a session plus a plan-generation job. The response is 202 with IDs, so the request does not wait for an LLM. Workers claim eligible jobs in `BEGIN IMMEDIATE` transactions. The browser polls the session and displays queue state.
+`POST /api/sessions` validates the resume, role, and level and atomically inserts a session plus a plan-generation job. The response is 202 with IDs, so the request does not wait for a model service. Workers claim eligible jobs in `BEGIN IMMEDIATE` transactions. The browser polls the session and displays queue state.
 
 A validated plan contains exactly six questions, sequential IDs 1–6, and two questions in each category. On successful generation, the raw resume is removed from the session input and completed job payload. The resulting questions can still contain resume-derived facts.
 
-An answer is associated with a question stored by the server, never a client-invented prompt. The unique `(session_id, kind, question_id)` constraint prevents duplicate evaluation jobs. A repeated identical submission returns its job; a different answer to that question receives 409. Evaluations preserve the original question and answer alongside structured feedback. Category summaries are deterministic arithmetic over completed results.
+An answer is associated with a question stored by the server, never a client-invented question. The unique `(session_id, kind, question_id)` constraint prevents duplicate evaluation jobs. A repeated identical submission returns its job; a different answer to that question receives 409. Evaluations preserve the original question and answer alongside structured feedback. Category summaries are deterministic arithmetic over completed results.
 
 ## Queue state machine
 
@@ -33,9 +33,9 @@ The tradeoff is a single writer and local-disk deployment. Synchronous DB operat
 
 A measured scaling path is Postgres for session data, a durable broker for jobs, shared rate limiting, object storage for encrypted artifacts if needed, and a shared signaling adapter. Establish load/latency targets and benchmarks before claiming scale. No fabricated throughput or latency benchmark is included.
 
-## AI boundary
+## Evaluation boundary
 
-The provider receives a system instruction and JSON-encoded user data. Prompts explicitly treat resumes and answers as untrusted input; the model has no tools or ability to execute code. Strict response schemas are requested and server validation is authoritative. Prompt-injection instructions can still influence a model's coaching text; output schemas are a structural safeguard, not a semantic guarantee.
+The provider receives a system instruction and JSON-encoded user data. System instructions explicitly treat resumes and answers as untrusted input; the model has no tools or ability to execute code. Strict response schemas are requested and server validation is authoritative. Malicious embedded instructions can still influence a model's coaching text; output schemas are a structural safeguard, not a semantic guarantee.
 
 The live evaluator uses relevance (30), technical accuracy (30), specificity (25), and clarity (15) to request a total score out of 100. Scores are not independently calibrated. Demo mode returns a fixed 65-point illustration and clearly states that it does not assess performance. Stored sessions carry their mode; a later configuration change cannot cause pending demo resumes to be sent to a live provider.
 
@@ -43,7 +43,7 @@ The live evaluator uses relevance (30), technical accuracy (30), specificity (25
 
 PDF text extraction runs locally; pages with fewer than 30 extracted characters fall back to rasterization and OCR. Pages are capped at 2,000 pixels on the longest edge. English OCR loads public Tesseract assets on demand. Image resumes use the same OCR worker. Worker resources are terminated after extraction, and the PDF loading task is destroyed on success or failure.
 
-Camera preview requests video only. A practice room requests audio and video only after the user clicks its button. Rooms have 128-bit random invitation capabilities, a two-person cap, an hour lifetime, message-size limits, and per-socket event limits. Signaling uses WebSocket transport with origin checks; WebRTC transports the media. Leaving/unmounting stops tracks and closes the connection. Camera frames never go to the LLM. Browser speech recognition is a separate API and may send audio to the browser vendor.
+Camera preview requests video only. A practice room requests audio and video only after the user clicks its button. Rooms have 128-bit random invitation capabilities, a two-person cap, an hour lifetime, message-size limits, and per-socket event limits. Signaling uses WebSocket transport with origin checks; WebRTC transports the media. Leaving/unmounting stops tracks and closes the connection. Camera frames never go to the model service. Browser speech recognition is a separate API and may send audio to the browser vendor.
 
 ## Persistence and deletion
 

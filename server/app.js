@@ -23,7 +23,7 @@ export const publicJob = (j) => {
 export function createApp(
   store,
   {
-    mode = process.env.AI_MODE || 'demo',
+    mode = process.env.EVALUATION_MODE || 'demo',
     origin = process.env.APP_ORIGIN || 'http://localhost:5173',
     limits = true,
   } = {},
