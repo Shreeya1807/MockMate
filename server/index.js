@@ -1,15 +1,18 @@
 import { createServer } from 'node:http'
-import { openStore } from './store.js'
+import { openDatabase } from './database.js'
 import { createApp } from './app.js'
 import { createProvider } from './provider.js'
 import { startWorker } from './worker.js'
 import { attachSignaling } from './signaling.js'
 
-const store = openStore(),
+const store = await openDatabase(),
   provider = createProvider()
-store.prune()
+await store.prune()
 const server = createServer(createApp(store))
-const io = attachSignaling(server, process.env.APP_ORIGIN || 'http://localhost:5173')
+const io = attachSignaling(
+  server,
+  process.env.APP_ORIGIN || process.env.RENDER_EXTERNAL_URL || 'http://localhost:5173',
+)
 const stop = process.env.WORKER_MODE === 'external' ? async () => {} : startWorker(store, provider)
 server.listen(Number(process.env.PORT || 3001), '0.0.0.0', () =>
   console.log(
@@ -30,6 +33,6 @@ for (const signal of ['SIGINT', 'SIGTERM'])
     io.close()
     server.close()
     await stop()
-    store.db.close()
+    await store.close()
     clearTimeout(timeout)
   })

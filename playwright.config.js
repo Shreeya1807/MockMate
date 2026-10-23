@@ -24,6 +24,8 @@ export default defineConfig({
       EVALUATION_MODE: 'demo',
       APP_ORIGIN: 'http://localhost:3001',
       DATABASE_PATH: 'data/e2e.sqlite',
+      DATABASE_URL: '',
+      REQUIRE_DATABASE_URL: '0',
       PORT: '3001',
       WORKER_MODE: 'embedded',
     },

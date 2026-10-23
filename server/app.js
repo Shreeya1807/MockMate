@@ -24,7 +24,7 @@ export function createApp(
   store,
   {
     mode = process.env.EVALUATION_MODE || 'demo',
-    origin = process.env.APP_ORIGIN || 'http://localhost:5173',
+    origin = process.env.APP_ORIGIN || process.env.RENDER_EXTERNAL_URL || 'http://localhost:5173',
     limits = true,
   } = {},
 ) {
@@ -67,10 +67,10 @@ export function createApp(
     next()
   })
   app.get('/health/live', (_req, res) => res.json({ status: 'ok' }))
-  app.get('/health/ready', (_req, res) => {
+  app.get('/health/ready', async (_req, res) => {
     try {
-      store.db.prepare('SELECT 1').get()
-      const ready = store.ready()
+      await store.ping()
+      const ready = await store.ready()
       res.status(ready ? 200 : 503).json({
         status: ready ? 'ready' : 'worker unavailable',
         revision: process.env.RENDER_GIT_COMMIT || process.env.APP_REVISION || 'local',
@@ -79,19 +79,19 @@ export function createApp(
       res.status(503).json({ status: 'database unavailable' })
     }
   })
-  app.get('/metrics', (req, res) => {
+  app.get('/metrics', async (req, res) => {
     if (
       !process.env.METRICS_TOKEN ||
       req.get('Authorization') !== `Bearer ${process.env.METRICS_TOKEN}`
     )
       return res.status(401).end()
-    const rows = store.db.prepare('SELECT status,count(*) AS count FROM jobs GROUP BY status').all()
+    const rows = await store.counts()
     const lines = [
       '# HELP mockmate_jobs Jobs by status.',
       '# TYPE mockmate_jobs gauge',
       ...rows.map((r) => `mockmate_jobs{status="${r.status}"} ${r.count}`),
       '# TYPE mockmate_worker_ready gauge',
-      `mockmate_worker_ready ${store.ready() ? 1 : 0}`,
+      `mockmate_worker_ready ${(await store.ready()) ? 1 : 0}`,
     ]
     res.type('text/plain').send(lines.join('\n') + '\n')
   })
@@ -158,22 +158,20 @@ export function createApp(
         : [],
     }),
   )
-  app.get('/api/sessions', (req, res) => res.json(store.list(req.owner)))
-  app.post('/api/sessions', writes, (req, res) => {
+  app.get('/api/sessions', async (req, res) => res.json(await store.list(req.owner)))
+  app.post('/api/sessions', writes, async (req, res) => {
     const input = sessionInput.parse(req.body)
-    if (store.list(req.owner).length >= 30)
+    if ((await store.list(req.owner)).length >= 30)
       return res
         .status(429)
         .json({ error: 'Session limit reached. Delete an older session first.' })
-    const pending = store.db
-      .prepare("SELECT count(*) AS n FROM jobs WHERE status IN ('queued','running')")
-      .get().n
+    const pending = await store.pending()
     if (pending >= 100)
       return res.status(503).json({ error: 'The queue is full. Try again shortly.' })
-    res.status(202).json(store.create(req.owner, input, mode))
+    res.status(202).json(await store.create(req.owner, input, mode))
   })
-  app.get('/api/sessions/:id', (req, res) => {
-    const session = store.session(req.params.id, req.owner)
+  app.get('/api/sessions/:id', async (req, res) => {
+    const session = await store.session(req.params.id, req.owner)
     if (!session) return res.status(404).json({ error: 'Session not found' })
     const { role, level } = JSON.parse(session.input)
     res.json({
@@ -183,23 +181,23 @@ export function createApp(
       mode: session.mode,
       created: session.created,
       plan: session.plan ? JSON.parse(session.plan) : null,
-      jobs: store.jobs(session.id).map(publicJob),
+      jobs: (await store.jobs(session.id)).map(publicJob),
     })
   })
-  app.delete('/api/sessions/:id', (req, res) => {
-    if (!store.remove(req.params.id, req.owner))
+  app.delete('/api/sessions/:id', async (req, res) => {
+    if (!(await store.remove(req.params.id, req.owner)))
       return res.status(404).json({ error: 'Session not found' })
     res.status(204).end()
   })
-  app.post('/api/sessions/:id/answers', writes, (req, res) => {
+  app.post('/api/sessions/:id/answers', writes, async (req, res) => {
     const input = answerInput.parse(req.body),
-      session = store.session(req.params.id, req.owner)
+      session = await store.session(req.params.id, req.owner)
     if (!session) return res.status(404).json({ error: 'Session not found' })
     if (!session.plan) return res.status(409).json({ error: 'Interview questions are not ready' })
     const question = JSON.parse(session.plan).questions.find((q) => q.id === input.questionId)
-    const existing = store
-      .jobs(session.id)
-      .find((j) => j.question_id === input.questionId && j.kind === 'evaluation')
+    const existing = (await store.jobs(session.id)).find(
+      (j) => j.question_id === input.questionId && j.kind === 'evaluation',
+    )
     if (existing) {
       const previous = existing.result
         ? JSON.parse(existing.result).answer
@@ -208,15 +206,12 @@ export function createApp(
         return res.status(409).json({ error: 'This question already has a submitted answer' })
       return res.status(202).json(publicJob(existing))
     }
-    if (
-      store.db.prepare("SELECT count(*) AS n FROM jobs WHERE status IN ('queued','running')").get()
-        .n >= 100
-    )
+    if ((await store.pending()) >= 100)
       return res.status(503).json({ error: 'The queue is full. Try again shortly.' })
     const { role, level } = JSON.parse(session.input)
     res.status(202).json(
       publicJob(
-        store.enqueue(session.id, input.questionId, {
+        await store.enqueue(session.id, input.questionId, {
           question,
           answer: input.answer,
           role,
@@ -225,8 +220,8 @@ export function createApp(
       ),
     )
   })
-  app.get('/api/jobs/:id', (req, res) => {
-    const job = store.job(req.params.id, req.owner)
+  app.get('/api/jobs/:id', async (req, res) => {
+    const job = await store.job(req.params.id, req.owner)
     if (!job) return res.status(404).json({ error: 'Job not found' })
     res.json(publicJob(job))
   })
@@ -237,6 +232,8 @@ export function createApp(
     app.get('/{*path}', (_req, res) => res.sendFile(resolve(dist, 'index.html')))
   }
   app.use((err, _req, res, _next) => {
+    if ([409, 429, 503].includes(err.status))
+      return res.status(err.status).json({ error: err.message })
     if (err.name === 'ZodError')
       return res.status(400).json({
         error: 'Invalid input',

@@ -273,3 +273,23 @@ test('metrics require a secret and contain no interview payloads', async (t) => 
   assert.match(response.text, /mockmate_jobs\{status="queued"\} 1/)
   assert.equal(response.text.includes(input.resume), false)
 })
+
+test('concurrent conflicting answers cannot bypass idempotency checks', async (t) => {
+  const { store, app, provider } = setup()
+  t.after(() => store.close())
+  const agent = request.agent(app)
+  const { id } = (await post(agent, '/api/sessions', input).expect(202)).body
+  await processOne(store, provider, 0)
+  const responses = await Promise.all([
+    post(agent, `/api/sessions/${id}/answers`, {
+      questionId: 1,
+      answer: 'First detailed answer with concrete examples.',
+    }),
+    post(agent, `/api/sessions/${id}/answers`, {
+      questionId: 1,
+      answer: 'Second conflicting answer with different examples.',
+    }),
+  ])
+  assert.deepEqual(responses.map((r) => r.status).sort(), [202, 409])
+  assert.equal(store.jobs(id).filter((j) => j.kind === 'evaluation').length, 1)
+})

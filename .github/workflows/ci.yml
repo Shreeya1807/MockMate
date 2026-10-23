@@ -7,6 +7,31 @@ on:
 permissions:
   contents: read
 jobs:
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: mockmate
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: mockmate_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mockmate -d mockmate_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/postgres.test.js
+        env:
+          TEST_DATABASE_URL: postgres://mockmate:ci-only-password@localhost:5432/mockmate_test
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15

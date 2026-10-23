@@ -21,12 +21,22 @@ export function openStore(path = process.env.DATABASE_PATH || 'data/mockmate.sql
   const one = (sql, ...args) => db.prepare(sql).get(...args)
   return {
     db,
+    kind: 'sqlite',
+    close: () => db.close(),
+    ping: () => one('SELECT 1'),
+    mode: (id) => one('SELECT mode FROM sessions WHERE id=?', id)?.mode,
+    pending: () => one("SELECT count(*) AS n FROM jobs WHERE status IN ('queued','running')").n,
+    counts: () => db.prepare('SELECT status,count(*) AS count FROM jobs GROUP BY status').all(),
     create(owner, input, mode) {
       const id = randomUUID(),
         jobId = randomUUID(),
         now = Date.now()
       db.exec('BEGIN IMMEDIATE')
       try {
+        if (one('SELECT count(*) AS n FROM sessions WHERE owner=?', owner).n >= 30)
+          throw Object.assign(new Error('Session limit reached'), { status: 429 })
+        if (one("SELECT count(*) AS n FROM jobs WHERE status IN ('queued','running')").n >= 100)
+          throw Object.assign(new Error('The queue is full. Try again shortly.'), { status: 503 })
         db.prepare('INSERT INTO sessions VALUES (?, ?, ?, NULL, ?, ?)').run(
           id,
           owner,
@@ -61,15 +71,44 @@ export function openStore(path = process.env.DATABASE_PATH || 'data/mockmate.sql
         }))
     },
     enqueue(sessionId, questionId, payload) {
-      db.prepare(
-        'INSERT OR IGNORE INTO jobs(id,session_id,kind,question_id,payload,available) VALUES (?, ?, ?, ?, ?, ?)',
-      ).run(randomUUID(), sessionId, 'evaluation', questionId, JSON.stringify(payload), Date.now())
-      return one(
-        'SELECT * FROM jobs WHERE session_id=? AND kind=? AND question_id=?',
-        sessionId,
-        'evaluation',
-        questionId,
-      )
+      const existing = () =>
+        one(
+          'SELECT * FROM jobs WHERE session_id=? AND kind=? AND question_id=?',
+          sessionId,
+          'evaluation',
+          questionId,
+        )
+      db.exec('BEGIN IMMEDIATE')
+      try {
+        const previous = existing()
+        if (previous) {
+          const answer = JSON.parse(previous.result || previous.payload).answer
+          if (answer !== payload.answer)
+            throw Object.assign(new Error('This question already has a submitted answer'), {
+              status: 409,
+            })
+          db.exec('COMMIT')
+          return previous
+        }
+        if (one("SELECT count(*) AS n FROM jobs WHERE status IN ('queued','running')").n >= 100)
+          throw Object.assign(new Error('The queue is full. Try again shortly.'), { status: 503 })
+        db.prepare(
+          'INSERT INTO jobs(id,session_id,kind,question_id,payload,available) VALUES (?, ?, ?, ?, ?, ?)',
+        ).run(
+          randomUUID(),
+          sessionId,
+          'evaluation',
+          questionId,
+          JSON.stringify(payload),
+          Date.now(),
+        )
+        const job = existing()
+        db.exec('COMMIT')
+        return job
+      } catch (error) {
+        db.exec('ROLLBACK')
+        throw error
+      }
     },
     job(id, owner) {
       return one(
