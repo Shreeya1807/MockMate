@@ -15,7 +15,7 @@ A full-stack interview and assessment studio with résumé parsing, OCR, durable
 
 [**Open MockMate**](https://mockmate-nu2x.onrender.com) · Free hosting may need about a minute to wake after inactivity. The hosted app uses a free live evaluator; provider quotas apply. Local demo mode remains available.
 
-![MockMate interview studio](docs/studio.png)
+![MockMate résumé setup with a sample résumé](docs/screenshots/resume.png)
 
 MockMate turns a résumé into six interview questions, evaluates answers against a structured rubric, and produces a report you can revisit or export. It runs without an API key in an explicitly labeled demo mode. Live mode uses a server-side OpenRouter integration with schema-validated model output.
 
@@ -31,6 +31,36 @@ npm run dev
 ```
 
 Open **http://localhost:5173**. Choose **Try a sample**, review the consent checkbox, and build your interview. No account, API key, Docker, or separate database server is required for the demo. Use `localhost` consistently, because origin checks distinguish it from `127.0.0.1`.
+
+## Walk through a working session
+
+These screenshots were captured from the running application using the included sample résumé and a complete six-answer session. **Local demo mode is shown: scores and feedback are illustrative fixtures.** The hosted application uses live evaluation, subject to provider availability.
+
+### 1. Practice a personalized question
+
+Review the question category and write an answer. Speech and peer-practice controls are available alongside the interview.
+
+![Interview question and answer editor](docs/screenshots/interview.png)
+
+### 2. Review structured feedback
+
+See strengths, improvements, and an answer framework before moving to the next question.
+
+![Completed answer with structured demo feedback](docs/screenshots/feedback.png)
+
+### 3. Review and export the completed report
+
+The report shows completion and category scores. Export the session as JSON or print it to PDF.
+
+![Completed six-answer session report in demo mode](docs/screenshots/report.png)
+
+### 4. Revisit previous sessions
+
+Open saved reports or delete sessions from the same browser.
+
+![Session history with the completed practice session](docs/screenshots/history.png)
+
+For a quick review, run the sample journey above, then inspect the [queue and storage design](docs/ARCHITECTURE.md), [API contracts](docs/API.md), and [test/deployment runs](https://github.com/Shreeya1807/MockMate/actions/workflows/ci.yml).
 
 ## What you can do
 
